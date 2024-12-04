@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Recommendation System</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: white;
+            color: #08fccc;
+            margin: 0;
+            padding: 0;
+        }
+
+        h1 {
+            text-align: center;
+            font-family: 'Amatic SC', cursive;
+            color: #08fccc;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        input[type="text"] {
+            width: 80%;
+            padding: 10px;
+            margin: 10px auto;
+            display: block;
+            border: 1px solid #08fccc;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #08fccc;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px auto;
+            display: block;
+        }
+
+        button:hover {
+            background-color: #06c1b8;
+        }
+
+        #recommendations {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr); /* 4 books per row */
+            gap: 20px;
+            padding: 20px 0;
+        }
+
+        .book {
+            background-color: #f1f1f1;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .book img {
+            max-width: 150px;
+            max-height: 200px;
+            object-fit: cover;
+            margin-bottom: 10px;
+        }
+
+        .book h3 {
+            font-family: 'Amatic SC', cursive;
+            font-size: 22px;
+            margin: 10px 0;
+        }
+
+        .book p {
+            font-size: 14px;
+            font-family: 'Source Code Pro', monospace;
+            line-height: 1.4;
+            text-align: center;
+            color: #333;
+        }
+
+        .book a {
+            text-decoration: none;
+            color: #08fccc;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .book a:hover {
+            color: #06c1b8;
+        }
+
+        #loadMoreBtn {
+            display: block;
+            margin: 20px auto;
+            padding: 10px 20px;
+            background-color: #08fccc;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        #loadMoreBtn:hover {
+            background-color: #06c1b8;
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Amatic+SC:wght@700&family=Source+Code+Pro&family=Arial&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <div class="container">
+        <h1>Book Recommendation System</h1>
+        <form id="searchForm">
+            <input type="text" id="query" placeholder="Enter book genre or title" required>
+            <button type="submit">Get Recommendations</button>
+        </form>
+
+        <div id="recommendations"></div>
+
+        <button id="loadMoreBtn" style="display: none;">Load More</button>
+    </div>
+
+    <script>
+        let currentPage = 1;
+        let query = '';
+        
+        document.getElementById('searchForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            query = document.getElementById('query').value;
+            currentPage = 1; // Reset to the first page on new search
+            fetchBooks(query, currentPage);
+        });
+        
+        document.getElementById('loadMoreBtn').addEventListener('click', function() {
+            currentPage++;
+            fetchBooks(query, currentPage);
+        });
+        
+        function fetchBooks(query, page) {
+            const recommendationsDiv = document.getElementById('recommendations');
+            const loadMoreBtn = document.getElementById('loadMoreBtn');
+            loadMoreBtn.style.display = 'none'; // Hide "Load More" button while fetching data
+            
+            fetch(`/recommend?query=${query}&page=${page}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        recommendationsDiv.innerHTML = `<p>No books found for your search query.</p>`;
+                    } else {
+                        if (page === 1) {
+                            recommendationsDiv.innerHTML = ''; // Clear previous results
+                        }
+                        
+                        // Display the books
+                        data.books.forEach(book => {
+                            const bookDiv = document.createElement('div');
+                            bookDiv.classList.add('book');
+                            
+
+                            const bookCover = book.cover_image ? 
+                                `<img src="${book.cover_image}" alt="${book.title} cover">` :
+                                `<img src="https://via.placeholder.com/150x200?text=No+Cover" alt="No cover available">`;
+
+                            bookDiv.innerHTML = `
+                                ${bookCover}
+                                <h3>${book.title}</h3>
+                                <p><strong>Authors:</strong> ${book.authors.join(', ')}</p>
+                                <p><strong>Categories:</strong> ${book.categories.join(', ')}</p>
+                                <p>${book.description ? book.description.substring(0, 150) + '...' : 'No description available.'}</p>
+                                <a href="${book.preview_link}" target="_blank">Preview</a>
+                            `;
+                            recommendationsDiv.appendChild(bookDiv);
+                        });
+
+                        // Show "Load More" button if there are more results
+                        if (data.books.length === 8) {
+                            loadMoreBtn.style.display = 'block'; // Show the "Load More" button
+                        } else {
+                            loadMoreBtn.style.display = 'none'; // Hide if no more books
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        }
+    </script>
+
+</body>
+</html>
